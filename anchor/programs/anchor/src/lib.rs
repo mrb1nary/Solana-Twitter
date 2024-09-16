@@ -9,7 +9,7 @@ pub mod solana_twitter{
 
     
     pub fn send_tweet(ctx:Context<SendTweet>, content: String)-> Result<()>{
-        if content.chars().count() > 280 {
+        if content.chars().count() > 250 {
             return err!(Errors::ContentTooLong);
         }
         
@@ -23,6 +23,11 @@ pub mod solana_twitter{
         my_tweet.timestamp = clock.unix_timestamp;
         Ok(())
     }
+
+    pub fn delete_tweet(_ctx:Context<DeleteTweet>)->Result<()>{
+        Ok(())
+    }
+
 }
 
 
@@ -34,6 +39,15 @@ pub enum Errors {
     ContentTooLong,
 }
 
+
+#[derive(Accounts)]
+pub struct DeleteTweet<'info>{
+    #[account(mut, close = sender)]
+    pub tweet_account: Account<'info, Tweet>,
+    #[account(mut)]
+    pub sender: Signer<'info>,
+    pub system_program: Program<'info, System>
+}
 
 #[derive(Accounts)]
 pub struct SendTweet<'info>{
