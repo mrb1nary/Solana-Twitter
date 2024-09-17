@@ -14,7 +14,7 @@ const Feed = () => {
   };
 
   const opts: web3.ConnectionConfig = { commitment: 'processed' };
-  const wallet = useWallet(); 
+  const wallet = useWallet();
 
   const connection = new Connection("http://localhost:8899");
   const provider = new AnchorProvider(
@@ -27,9 +27,9 @@ const Feed = () => {
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const program = new Program<Idl>(idl as Idl, provider);
-  
+
   const [tweets, setTweets] = useState<any[]>([]);
-  
+
   useEffect(() => {
     const fetchTweets = async () => {
       try {
@@ -44,7 +44,13 @@ const Feed = () => {
   }, [program]);
 
   return (
-    <Box w="85%" p={6} bg="gray.100" overflowY="scroll" h="100vh">
+    <Box
+      w={{ base: "100%", md: "85%" }} // Full width on mobile, 85% on larger screens
+      p={6}
+      bg="gray.100"
+      overflowY="scroll"
+      h="100vh"
+    >
       <VStack spacing={4} align="start">
         {tweets.map((tweetData, index) => (
           <TweetCard

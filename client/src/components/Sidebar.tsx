@@ -11,28 +11,35 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Textarea
+  Textarea,
+  useBreakpointValue,
+  Drawer,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerHeader,
+  DrawerBody,
+  DrawerCloseButton,
+  useMediaQuery,
 } from "@chakra-ui/react";
 import { FiHome, FiHash, FiMail, FiEdit } from "react-icons/fi";
 import { useState } from "react";
 import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
-import { useWallet, WalletContextState } from "@solana/wallet-adapter-react"; // Assuming you're using Solana Wallet Adapter
+import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Idl, Program, web3 } from "@coral-xyz/anchor";
-import idl from '../../../anchor/target/idl/solana_twitter.json'; 
-const Sidebar = () => {
+import idl from '../../../anchor/target/idl/solana_twitter.json';
 
+const Sidebar = () => {
   type SolanaWallet = WalletContextState & {
     publicKey: PublicKey;
     signTransaction(tx: web3.Transaction): Promise<web3.Transaction>;
     signAllTransactions(txs: web3.Transaction[]): Promise<web3.Transaction[]>;
   };
 
-  
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [tweetContent, setTweetContent] = useState("");
-  const opts: web3.ConnectionConfig = { commitment: 'processed' };
   const characterLimit = 250;
-  const wallet = useWallet(); 
+  const wallet = useWallet();
+  const opts: web3.ConnectionConfig = { commitment: "processed" };
 
   const connection = new Connection("http://localhost:8899");
   const provider = new AnchorProvider(
@@ -40,13 +47,13 @@ const Sidebar = () => {
     wallet as SolanaWallet,
     {
       preflightCommitment: opts.commitment,
-      commitment: opts.commitment
+      commitment: opts.commitment,
     }
   );
   const program = new Program<Idl>(idl as Idl, provider);
 
   // Handle tweet content change
-  const handleTweetChange = (e) => {
+  const handleTweetChange = (e: any) => {
     if (e.target.value.length <= characterLimit) {
       setTweetContent(e.target.value);
     }
@@ -57,7 +64,7 @@ const Sidebar = () => {
     if (!tweetContent.trim()) return;
 
     try {
-      const tweet = web3.Keypair.generate()
+      const tweet = web3.Keypair.generate();
 
       // Send the transaction
       await program.methods
@@ -65,8 +72,9 @@ const Sidebar = () => {
         .accounts({
           tweetAccount: tweet.publicKey,
           sender: wallet.publicKey,
-          systemProgram: SystemProgram.programId
-        }).signers([tweet])
+          systemProgram: SystemProgram.programId,
+        })
+        .signers([tweet])
         .rpc();
 
       console.log("Tweet posted:", tweetContent);
@@ -78,7 +86,7 @@ const Sidebar = () => {
   };
 
   // Function to render a sidebar item
-  const renderSidebarItem = (icon, label, ariaLabel) => (
+  const renderSidebarItem = (icon: any, label: string, ariaLabel: string) => (
     <HStack w="full" spacing={4} alignItems="center">
       <IconButton
         icon={icon}
@@ -90,41 +98,96 @@ const Sidebar = () => {
         _hover={{ bg: "black" }}
         borderRadius="full"
       />
-      <Text color="white" fontSize="lg">{label}</Text>
+      <Text color="white" fontSize="lg">
+        {label}
+      </Text>
     </HStack>
   );
 
+  // Mobile responsive logic
+  const isMobile = useBreakpointValue({ base: true, md: false });
+  const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [isLargerThan768] = useMediaQuery("(min-width: 768px)");
+
   return (
     <>
-      <VStack
-        align="start"
-        p={4}
-        spacing={8}
-        h="100vh"
-        w="15%"
-        bg="gray.800"
-        borderRight="1px solid #E2E8F0"
-        position="sticky"
-        top={0}
-      >
-        {renderSidebarItem(<FiHome />, "Home", "Home")}
-        {renderSidebarItem(<FiHash />, "Explore", "Explore")}
-        {renderSidebarItem(<FiMail />, "Messages", "Messages")}
+      {isMobile ? (
+        <>
+          <IconButton
+            aria-label="Open menu"
+            icon={<FiEdit />}
+            size="lg"
+            colorScheme="blue"
+            onClick={() => setDrawerOpen(true)}
+            position="fixed"
+            bottom={4}
+            right={4}
+            zIndex={1000}
+          />
 
-        {/* New Tweet Button */}
-        <Button
-          leftIcon={<FiEdit />}
-          size="lg"
-          bg="blue.500"
-          color="white"
-          _hover={{ bg: "blue.600" }}
-          borderRadius="full"
-          w="full"
-          onClick={onOpen}
+          <Drawer
+            isOpen={isDrawerOpen}
+            placement="left"
+            onClose={() => setDrawerOpen(false)}
+          >
+            <DrawerOverlay />
+            <DrawerContent bg="gray.800" color="white">
+              <DrawerCloseButton />
+              <DrawerHeader>Menu</DrawerHeader>
+
+              <DrawerBody>
+                <VStack align="start" spacing={8}>
+                  {renderSidebarItem(<FiHome />, "Home", "Home")}
+                  {renderSidebarItem(<FiHash />, "Explore", "Explore")}
+                  {renderSidebarItem(<FiMail />, "Messages", "Messages")}
+                  <Button
+                    leftIcon={<FiEdit />}
+                    size="lg"
+                    bg="blue.500"
+                    color="white"
+                    _hover={{ bg: "blue.600" }}
+                    borderRadius="full"
+                    w="full"
+                    onClick={onOpen}
+                  >
+                    New Tweet
+                  </Button>
+                </VStack>
+              </DrawerBody>
+            </DrawerContent>
+          </Drawer>
+        </>
+      ) : (
+        <VStack
+          align="start"
+          p={4}
+          spacing={8}
+          h="100vh"
+          w="15%"
+          bg="gray.800"
+          borderRight="1px solid #E2E8F0"
+          position="sticky"
+          top={0}
         >
-          New Tweet
-        </Button>
-      </VStack>
+          {renderSidebarItem(<FiHome />, "Home", "Home")}
+          {renderSidebarItem(<FiHash />, "Explore", "Explore")}
+          {renderSidebarItem(<FiMail />, "Messages", "Messages")}
+
+          {/* New Tweet Button */}
+          <Button
+            leftIcon={<FiEdit />}
+            size="lg"
+            bg="blue.500"
+            color="white"
+            _hover={{ bg: "blue.600" }}
+            borderRadius="full"
+            w="full"
+            onClick={onOpen}
+          >
+            New Tweet
+          </Button>
+        </VStack>
+      )}
 
       {/* Modal for New Tweet */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered>
@@ -153,7 +216,9 @@ const Sidebar = () => {
             >
               Post
             </Button>
-            <Button variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

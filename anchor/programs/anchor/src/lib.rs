@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 
+
 declare_id!("8Ju3FWgNEftjMiueY5kFFJvWTM52kJ1sULYWo51BybEm");
 
 #[program]
@@ -8,11 +9,12 @@ pub mod solana_twitter{
     use super::*;
 
     
-    pub fn send_tweet(ctx:Context<SendTweet>, content: String)-> Result<()>{
+
+    pub fn send_tweet(ctx: Context<SendTweet>, content: String) -> Result<()> {
         if content.chars().count() > 250 {
             return err!(Errors::ContentTooLong);
         }
-        
+
         let my_tweet = &mut ctx.accounts.tweet_account;
         let signer = &ctx.accounts.sender;
         let clock = Clock::get().unwrap();
@@ -23,6 +25,7 @@ pub mod solana_twitter{
         my_tweet.timestamp = clock.unix_timestamp;
         Ok(())
     }
+
 
     pub fn delete_tweet(_ctx:Context<DeleteTweet>)->Result<()>{
         Ok(())

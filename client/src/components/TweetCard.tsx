@@ -56,6 +56,10 @@ const TweetCard = ({ tweet }: { tweet: any }) => {
     }
   };
 
+  const tweetTimestamp = new Date(tweet.timestamp * 1000); // Convert from seconds to milliseconds
+  const timeAgo = moment(tweetTimestamp).fromNow();
+  
+
   return (
     <Box
       w="full"
@@ -82,7 +86,7 @@ const TweetCard = ({ tweet }: { tweet: any }) => {
               {truncatePublicKey(wallet)} {/* Truncated public key */}
             </Text>
             <Text fontSize="sm" color="gray.500">
-              {moment(timestamp * 1000).fromNow()} {/* Convert timestamp to milliseconds */}
+              {timeAgo}
             </Text>
           </VStack>
         </HStack>
