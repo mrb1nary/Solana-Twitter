@@ -80,13 +80,10 @@ Before you begin, make sure you have the following installed:
 
 Contributions are welcome! If you have suggestions, bug reports, or would like to contribute to the project, please open an issue or submit a pull request.
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 📫 Contact
 
-For questions or feedback, reach out to [your-email@example.com](mailto:your-email@example.com).
+For questions or feedback, reach out to [anubhab.techie@gmail.com](mailto:anubhab.techie@gmail.com).
 
 ---
 
