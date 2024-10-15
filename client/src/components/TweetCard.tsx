@@ -3,7 +3,7 @@ import moment from "moment";
 import { clusterApiUrl, Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Idl, Program, web3} from "@coral-xyz/anchor";
-import idl from '../../../anchor/target/idl/solana_twitter.json'; // Import your program's IDL
+import idl from '../solana_twitter.json'; // Import your program's IDL
 
 const TweetCard = ({ tweet, pda }: { tweet: any, pda: string }) => {
 
