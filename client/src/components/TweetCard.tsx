@@ -1,11 +1,11 @@
 import { Box, Text, HStack, VStack, Avatar, Divider, Button } from "@chakra-ui/react";
 import moment from "moment";
-import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Idl, Program, web3} from "@coral-xyz/anchor";
-import idl from '../../../anchor/target/idl/solana_twitter.json'; // Import your program's IDL (replace with actual path)
+import idl from '../../../anchor/target/idl/solana_twitter.json'; // Import your program's IDL
 
-const TweetCard = ({ tweet }: { tweet: any }) => {
+const TweetCard = ({ tweet, pda }: { tweet: any, pda: string }) => {
 
   type SolanaWallet = WalletContextState & {
     publicKey: PublicKey;
@@ -15,7 +15,6 @@ const TweetCard = ({ tweet }: { tweet: any }) => {
   
   const wallet = tweet.author.toBase58(); // Convert Pubkey to string
   const content = tweet.content;
-  const timestamp = tweet.timestamp;
   const currentWallet = useWallet().publicKey?.toBase58(); // Get the current wallet's public key
 
   const truncatePublicKey = (key: string) => {
@@ -26,25 +25,25 @@ const TweetCard = ({ tweet }: { tweet: any }) => {
   };
 
   const walletConnection = useWallet();
-  const connection = new Connection("http://localhost:8899"); // Solana network connection
+  const connection = new Connection(clusterApiUrl('devnet'));
   const provider = new AnchorProvider(connection, walletConnection as SolanaWallet, { preflightCommitment: 'processed' });
   const program = new Program<Idl>(idl as Idl, provider);
 
-  // Function to handle tweet deletion
+  // Function to handle tweet deletion based on PDA
   const handleDeleteTweet = async () => {
     if (!currentWallet) return;
 
     try {
-      
+      // Derive the PDA from the parent component (passed as props)
+      const tweetPDA = new PublicKey(pda);
 
-
-      console.log(wallet);
+      console.log("Deleting tweet with PDA:", tweetPDA.toBase58());
 
       await program.methods
         .deleteTweet()
         .accounts({
-          tweetAccount: walletConnection.publicKey,
-          sender: walletConnection.publicKey,
+          tweetAccount: tweetPDA, // PDA of the tweet account
+          sender: walletConnection.publicKey, // Current wallet
           systemProgram: SystemProgram.programId
         })
         .rpc();
@@ -58,7 +57,6 @@ const TweetCard = ({ tweet }: { tweet: any }) => {
 
   const tweetTimestamp = new Date(tweet.timestamp * 1000); // Convert from seconds to milliseconds
   const timeAgo = moment(tweetTimestamp).fromNow();
-  
 
   return (
     <Box

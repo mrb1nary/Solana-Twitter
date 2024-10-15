@@ -20,13 +20,15 @@ import {
   DrawerBody,
   DrawerCloseButton,
   useMediaQuery,
+  Input,
 } from "@chakra-ui/react";
 import { FiHome, FiHash, FiMail, FiEdit } from "react-icons/fi";
 import { useState } from "react";
-import { Connection, PublicKey, SystemProgram } from "@solana/web3.js";
+import { clusterApiUrl, Connection, PublicKey, SystemProgram } from "@solana/web3.js";
 import { useWallet, WalletContextState } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Idl, Program, web3 } from "@coral-xyz/anchor";
 import idl from '../../../anchor/target/idl/solana_twitter.json';
+
 
 const Sidebar = () => {
   type SolanaWallet = WalletContextState & {
@@ -36,12 +38,15 @@ const Sidebar = () => {
   };
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isSearchOpen, onOpen: onSearchOpen, onClose: onSearchClose } = useDisclosure();
   const [tweetContent, setTweetContent] = useState("");
+  const [publicKey, setPublicKey] = useState("");
   const characterLimit = 250;
   const wallet = useWallet();
   const opts: web3.ConnectionConfig = { commitment: "processed" };
 
-  const connection = new Connection("http://localhost:8899");
+  // const connection = new Connection("http://localhost:8899");
+  const connection = new Connection(clusterApiUrl('devnet'), opts.commitment);
   const provider = new AnchorProvider(
     connection,
     wallet as SolanaWallet,
@@ -59,22 +64,34 @@ const Sidebar = () => {
     }
   };
 
+  // Function to generate a PDA for a new tweet
+  const getTweetPDA = async (authorPublicKey: PublicKey) => {
+    const [tweetPDA] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("tweet"), // Seed for PDA
+        authorPublicKey.toBuffer(), 
+      ],
+      program.programId
+    );
+    return tweetPDA;
+  };
+
   // Function to handle sending the transaction to Solana
   const handlePostTweet = async () => {
     if (!tweetContent.trim()) return;
 
     try {
-      const tweet = web3.Keypair.generate();
+      // Generate PDA for the new tweet
+      const tweetPDA = await getTweetPDA(wallet.publicKey!);
 
       // Send the transaction
       await program.methods
         .sendTweet(tweetContent)
         .accounts({
-          tweetAccount: tweet.publicKey,
+          tweetAccount: tweetPDA, // Use PDA for the tweet
           sender: wallet.publicKey,
           systemProgram: SystemProgram.programId,
         })
-        .signers([tweet])
         .rpc();
 
       console.log("Tweet posted:", tweetContent);
@@ -86,8 +103,8 @@ const Sidebar = () => {
   };
 
   // Function to render a sidebar item
-  const renderSidebarItem = (icon: any, label: string, ariaLabel: string) => (
-    <HStack w="full" spacing={4} alignItems="center">
+  const renderSidebarItem = (icon: any, label: string, ariaLabel: string, showLabel: boolean, onClick?: () => void) => (
+    <HStack w="full" spacing={showLabel ? 4 : 0} alignItems="center" onClick={onClick}>
       <IconButton
         icon={icon}
         aria-label={ariaLabel}
@@ -98,13 +115,16 @@ const Sidebar = () => {
         _hover={{ bg: "black" }}
         borderRadius="full"
       />
-      <Text color="white" fontSize="lg">
-        {label}
-      </Text>
+      {showLabel && (
+        <Text color="white" fontSize="lg">
+          {label}
+        </Text>
+      )}
     </HStack>
   );
 
   // Mobile responsive logic
+  const showLabel = useBreakpointValue({ base: false, md: true });
   const isMobile = useBreakpointValue({ base: true, md: false });
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [isLargerThan768] = useMediaQuery("(min-width: 768px)");
@@ -137,9 +157,9 @@ const Sidebar = () => {
 
               <DrawerBody>
                 <VStack align="start" spacing={8}>
-                  {renderSidebarItem(<FiHome />, "Home", "Home")}
-                  {renderSidebarItem(<FiHash />, "Explore", "Explore")}
-                  {renderSidebarItem(<FiMail />, "Messages", "Messages")}
+                  {renderSidebarItem(<FiHome />, "Home", "Home", showLabel)}
+                  {renderSidebarItem(<FiHash />, "Search", "Search", showLabel, onSearchOpen)}
+                  {renderSidebarItem(<FiMail />, "Messages", "Messages", showLabel)}
                   <Button
                     leftIcon={<FiEdit />}
                     size="lg"
@@ -169,9 +189,9 @@ const Sidebar = () => {
           position="sticky"
           top={0}
         >
-          {renderSidebarItem(<FiHome />, "Home", "Home")}
-          {renderSidebarItem(<FiHash />, "Explore", "Explore")}
-          {renderSidebarItem(<FiMail />, "Messages", "Messages")}
+          {renderSidebarItem(<FiHome />, "Home", "Home", showLabel)}
+          {renderSidebarItem(<FiHash />, "Search", "Search", showLabel, onSearchOpen)}
+          {renderSidebarItem(<FiMail />, "Messages", "Messages", showLabel)}
 
           {/* New Tweet Button */}
           <Button
@@ -217,6 +237,29 @@ const Sidebar = () => {
               Post
             </Button>
             <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal for Search */}
+      <Modal isOpen={isSearchOpen} onClose={onSearchClose} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Search Tweets by Public Key</ModalHeader>
+          <ModalBody>
+            <Input
+              placeholder="Enter Public Key"
+              value={publicKey}
+              onChange={(e) => setPublicKey(e.target.value)}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3}>
+              Search
+            </Button>
+            <Button variant="ghost" onClick={onSearchClose}>
               Cancel
             </Button>
           </ModalFooter>

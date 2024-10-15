@@ -11,25 +11,29 @@ pub mod solana_twitter{
     
 
     pub fn send_tweet(ctx: Context<SendTweet>, content: String) -> Result<()> {
+        // Ensure the content length is less than 250 characters
         if content.chars().count() > 250 {
             return err!(Errors::ContentTooLong);
         }
-
+    
         let my_tweet = &mut ctx.accounts.tweet_account;
         let signer = &ctx.accounts.sender;
         let clock = Clock::get().unwrap();
-
-
+    
+        // Set PDA data
         my_tweet.author = *signer.key;
         my_tweet.content = content;
         my_tweet.timestamp = clock.unix_timestamp;
         Ok(())
     }
+    
 
 
-    pub fn delete_tweet(_ctx:Context<DeleteTweet>)->Result<()>{
+    pub fn delete_tweet(_ctx: Context<DeleteTweet>) -> Result<()> {
+        
         Ok(())
     }
+    
 
 }
 
@@ -44,22 +48,45 @@ pub enum Errors {
 
 
 #[derive(Accounts)]
-pub struct DeleteTweet<'info>{
-    #[account(mut, close = sender)]
+pub struct DeleteTweet<'info> {
+    #[account(
+        mut, 
+        close = sender, 
+        seeds = [
+            b"tweet",
+            sender.key().as_ref(),
+        ],
+        bump
+    )]
     pub tweet_account: Account<'info, Tweet>,
+    
     #[account(mut)]
     pub sender: Signer<'info>,
-    pub system_program: Program<'info, System>
+    
+    pub system_program: Program<'info, System>,
 }
 
+
 #[derive(Accounts)]
-pub struct SendTweet<'info>{
-    #[account(init, payer=sender, space=Tweet::LEN)]
+pub struct SendTweet<'info> {
+    #[account(
+        init, 
+        payer = sender,
+        space = Tweet::LEN,
+        seeds = [
+            b"tweet", // Seed for the PDA
+            sender.key().as_ref(), // User's public key as a seed
+        ],
+        bump
+    )]
     pub tweet_account: Account<'info, Tweet>,
+    
     #[account(mut)]
     pub sender: Signer<'info>,
-    pub system_program: Program<'info, System>
+
+    pub system_program: Program<'info, System>,
 }
+
 
 #[account]
 pub struct Tweet{
